@@ -1,0 +1,4 @@
+repository "Capstone_v7/Capstone_v7@18968367799043@cloud"
+  path "/"
+    br "/main"
+    co "/main"
