@@ -11,23 +11,25 @@ namespace TaiChi
         public PoseLandmarkerRunner_edited Runner;
         public Camera MainCamera;
 
-        [Header("Orb Prefab")]
-        public GameObject OrbPrefab;
+        [Header("Orb Prefabs")]
+        public GameObject BlueOrbPrefab;  // Correct form (score >= threshold)
+        public GameObject RedOrbPrefab;   // Incorrect form (score < threshold)
 
         [Header("Settings")]
         public float VisibilityThreshold = 0.5f;
         public float OrbDepth = 1.0f;
+        public float ScoreThreshold = 0.80f;
 
-        // 8 segments: (landmarkA, landmarkB, name)
-        private static readonly (int a, int b, string label)[] Segments = {
-            (11, 13, "L_UpperArm"),
-            (12, 14, "R_UpperArm"),
-            (13, 15, "L_Forearm"),
-            (14, 16, "R_Forearm"),
-            (23, 25, "L_Thigh"),
-            (24, 26, "R_Thigh"),
-            (25, 27, "L_Calf"),
-            (26, 28, "R_Calf"),
+        // 8 segments mapped to actual JSON keys from groupmate
+        private static readonly (int a, int b, string scoreKey, string label)[] Segments = {
+            (11, 13, "left_arm_upper_arm",  "L_UpperArm"),
+            (12, 14, "right_arm_upper_arm", "R_UpperArm"),
+            (13, 15, "left_arm_forearm",    "L_Forearm"),
+            (14, 16, "right_arm_forearm",   "R_Forearm"),
+            (23, 25, "left_leg_thigh",      "L_Thigh"),
+            (24, 26, "right_leg_thigh",     "R_Thigh"),
+            (25, 27, "left_leg_shin",       "L_Shin"),
+            (26, 28, "right_leg_shin",      "R_Shin"),
         };
 
         private struct LandmarkData
@@ -36,8 +38,15 @@ namespace TaiChi
         }
 
         private GameObject[] _orbs;
+        private bool[] _isCorrect; // true = blue, false = red
+
         private readonly Queue<LandmarkData[]> _resultQueue = new Queue<LandmarkData[]>();
         private readonly object _lock = new object();
+
+        private void Awake()
+        {
+            Debug.Log("[OrbManager] Awake called.");
+        }
 
         private void Start()
         {
@@ -45,6 +54,11 @@ namespace TaiChi
                 MainCamera = Camera.main;
 
             _orbs = new GameObject[Segments.Length];
+
+            // Default all orbs to blue
+            _isCorrect = new bool[Segments.Length];
+            for (int i = 0; i < _isCorrect.Length; i++)
+                _isCorrect[i] = true;
 
             if (Runner == null)
                 Runner = Object.FindFirstObjectByType<PoseLandmarkerRunner_edited>();
@@ -57,6 +71,45 @@ namespace TaiChi
             else
             {
                 Debug.LogError("[OrbManager] PoseLandmarkerRunner_edited not found!");
+            }
+
+            // Subscribe to fake data simulator
+            FakeDataSimulator.OnFakeScoresUpdated += HandleScoresUpdated;
+            Debug.Log("[OrbManager] Subscribed to FakeDataSimulator.");
+        }
+
+        private void OnDestroy()
+        {
+            if (Runner != null)
+                Runner.OnResultOutput -= HandleResult;
+
+            FakeDataSimulator.OnFakeScoresUpdated -= HandleScoresUpdated;
+            DestroyAllOrbs();
+        }
+
+        // Called every UpdateInterval seconds by FakeDataSimulator
+        // (Later replaced by real MQTT data)
+        private void HandleScoresUpdated(Dictionary<string, float> scores)
+        {
+            for (int i = 0; i < Segments.Length; i++)
+            {
+                string key = Segments[i].scoreKey;
+                if (!scores.ContainsKey(key)) continue;
+
+                float score = scores[key];
+                bool wasCorrect = _isCorrect[i];
+                _isCorrect[i] = score >= ScoreThreshold;
+
+                // Destroy orb so it respawns with correct color prefab
+                if (wasCorrect != _isCorrect[i])
+                {
+                    Debug.Log($"[OrbManager] {Segments[i].label} → {(_isCorrect[i] ? "BLUE" : "RED")} (score:{score:F2})");
+                    if (_orbs[i] != null)
+                    {
+                        Destroy(_orbs[i]);
+                        _orbs[i] = null;
+                    }
+                }
             }
         }
 
@@ -131,14 +184,15 @@ namespace TaiChi
 
                 float midX = (lmA.x + lmB.x) / 2f;
                 float midY = (lmA.y + lmB.y) / 2f;
-
                 Vector3 worldPos = NormalizedToWorld(midX, midY);
+
+                // Pick prefab based on current score state
+                GameObject prefab = _isCorrect[i] ? BlueOrbPrefab : RedOrbPrefab;
 
                 if (_orbs[i] == null)
                 {
-                    _orbs[i] = Instantiate(OrbPrefab, worldPos, Quaternion.identity);
+                    _orbs[i] = Instantiate(prefab, worldPos, Quaternion.identity);
                     _orbs[i].name = $"Orb_{Segments[i].label}";
-                    Debug.Log($"[OrbManager] Spawned {_orbs[i].name}");
                 }
                 else
                 {
@@ -151,25 +205,18 @@ namespace TaiChi
         {
             float viewX, viewY;
 
-            // On Android, Landmark (0,0) is often the sensor's top-left, 
-            // which is the screen's top-right or bottom-left in landscape.
             if (Application.isMobilePlatform)
             {
-                // For Landscape Left (Home button on right):
-                // Vertical hand movement (AI's X) -> Screen's Y
-                // Horizontal hand movement (AI's Y) -> Screen's X
                 viewX = 1f - normY;
                 viewY = 1f - normX;
             }
             else
             {
-                // Standard mapping for Laptop Webcam
                 viewX = normX;
                 viewY = 1f - normY;
             }
 
-            Vector3 viewportPoint = new Vector3(viewX, viewY, OrbDepth);
-            return MainCamera.ViewportToWorldPoint(viewportPoint);
+            return MainCamera.ViewportToWorldPoint(new Vector3(viewX, viewY, OrbDepth));
         }
 
         private void DestroyAllOrbs()
@@ -179,13 +226,6 @@ namespace TaiChi
             {
                 if (_orbs[i] != null) { Destroy(_orbs[i]); _orbs[i] = null; }
             }
-        }
-
-        private void OnDestroy()
-        {
-            if (Runner != null)
-                Runner.OnResultOutput -= HandleResult;
-            DestroyAllOrbs();
         }
     }
 }
