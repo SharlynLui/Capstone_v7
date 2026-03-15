@@ -15,8 +15,8 @@ namespace TaiChi
         public GameObject OrbPrefab;
 
         [Header("Settings")]
-        public float OrbDepth = 1f;
         public float VisibilityThreshold = 0.5f;
+        public float OrbDepth = 1.0f;
 
         // 8 segments: (landmarkA, landmarkB, name)
         private static readonly (int a, int b, string label)[] Segments = {
@@ -30,14 +30,13 @@ namespace TaiChi
             (26, 28, "R_Calf"),
         };
 
-        private GameObject[] _orbs;
+        private struct LandmarkData
+        {
+            public float x, y, visibility;
+        }
 
-        // ── Thread-safe queue ────────────────────────────────────────
-        // MediaPipe fires callbacks on a background thread.
-        // We store the latest result here and process it in Update()
-        // which runs on the main thread where Unity API calls are safe.
-        private PoseLandmarkerResult? _pendingResult = null;
-        private bool _hasNewResult = false;
+        private GameObject[] _orbs;
+        private readonly Queue<LandmarkData[]> _resultQueue = new Queue<LandmarkData[]>();
         private readonly object _lock = new object();
 
         private void Start()
@@ -61,72 +60,78 @@ namespace TaiChi
             }
         }
 
-        // Called on background thread by MediaPipe — only store the result
+        // Background thread — copy data immediately
         private void HandleResult(PoseLandmarkerResult result)
         {
-            lock (_lock)
-            {
-                _pendingResult = result;
-                _hasNewResult = true;
-            }
-        }
-
-        // Called on main thread every frame — safe to use Unity API here
-        private void Update()
-        {
-            PoseLandmarkerResult? result = null;
-
-            lock (_lock)
-            {
-                if (_hasNewResult)
-                {
-                    result = _pendingResult;
-                    _hasNewResult = false;
-                }
-            }
-
-            if (result.HasValue)
-                ProcessResult(result.Value);
-        }
-
-        private void ProcessResult(PoseLandmarkerResult result)
-        {
-            // No person detected
             if (result.poseLandmarks == null || result.poseLandmarks.Count == 0)
             {
-                DestroyAllOrbs();
+                lock (_lock) { _resultQueue.Enqueue(null); }
                 return;
             }
 
             var landmarks = result.poseLandmarks[0].landmarks;
-
             if (landmarks == null || landmarks.Count < 29)
             {
-                DestroyAllOrbs();
+                lock (_lock) { _resultQueue.Enqueue(null); }
                 return;
             }
 
+            var copy = new LandmarkData[landmarks.Count];
+            for (int i = 0; i < landmarks.Count; i++)
+            {
+                copy[i] = new LandmarkData
+                {
+                    x = landmarks[i].x,
+                    y = landmarks[i].y,
+                    visibility = landmarks[i].visibility.GetValueOrDefault(0f)
+                };
+            }
+
+            lock (_lock) { _resultQueue.Enqueue(copy); }
+        }
+
+        // Main thread
+        private void Update()
+        {
+            while (true)
+            {
+                LandmarkData[] landmarks = null;
+                bool hasItem = false;
+
+                lock (_lock)
+                {
+                    if (_resultQueue.Count > 0)
+                    {
+                        landmarks = _resultQueue.Dequeue();
+                        hasItem = true;
+                    }
+                }
+
+                if (!hasItem) break;
+
+                if (landmarks == null)
+                    DestroyAllOrbs();
+                else
+                    PlaceOrbs(landmarks);
+            }
+        }
+
+        private void PlaceOrbs(LandmarkData[] landmarks)
+        {
             for (int i = 0; i < Segments.Length; i++)
             {
                 var lmA = landmarks[Segments[i].a];
                 var lmB = landmarks[Segments[i].b];
 
-                // Joint not visible enough — destroy orb
                 if (lmA.visibility < VisibilityThreshold || lmB.visibility < VisibilityThreshold)
                 {
-                    if (_orbs[i] != null)
-                    {
-                        Destroy(_orbs[i]);
-                        _orbs[i] = null;
-                    }
+                    if (_orbs[i] != null) { Destroy(_orbs[i]); _orbs[i] = null; }
                     continue;
                 }
 
-                // Midpoint between the two landmarks (normalized 0-1)
                 float midX = (lmA.x + lmB.x) / 2f;
                 float midY = (lmA.y + lmB.y) / 2f;
 
-                // Safe to call ViewportToWorldPoint here — we are on main thread
                 Vector3 worldPos = NormalizedToWorld(midX, midY);
 
                 if (_orbs[i] == null)
@@ -144,10 +149,24 @@ namespace TaiChi
 
         private Vector3 NormalizedToWorld(float normX, float normY)
         {
-            // MediaPipe: x=0 LEFT, y=0 TOP
-            // Unity viewport: x=0 LEFT, y=0 BOTTOM — flip Y
-            float viewX = normX;
-            float viewY = 1f - normY;
+            float viewX, viewY;
+
+            // On Android, Landmark (0,0) is often the sensor's top-left, 
+            // which is the screen's top-right or bottom-left in landscape.
+            if (Application.isMobilePlatform)
+            {
+                // For Landscape Left (Home button on right):
+                // Vertical hand movement (AI's X) -> Screen's Y
+                // Horizontal hand movement (AI's Y) -> Screen's X
+                viewX = 1f - normY;
+                viewY = 1f - normX;
+            }
+            else
+            {
+                // Standard mapping for Laptop Webcam
+                viewX = normX;
+                viewY = 1f - normY;
+            }
 
             Vector3 viewportPoint = new Vector3(viewX, viewY, OrbDepth);
             return MainCamera.ViewportToWorldPoint(viewportPoint);
@@ -158,11 +177,7 @@ namespace TaiChi
             if (_orbs == null) return;
             for (int i = 0; i < _orbs.Length; i++)
             {
-                if (_orbs[i] != null)
-                {
-                    Destroy(_orbs[i]);
-                    _orbs[i] = null;
-                }
+                if (_orbs[i] != null) { Destroy(_orbs[i]); _orbs[i] = null; }
             }
         }
 
@@ -170,7 +185,6 @@ namespace TaiChi
         {
             if (Runner != null)
                 Runner.OnResultOutput -= HandleResult;
-
             DestroyAllOrbs();
         }
     }
