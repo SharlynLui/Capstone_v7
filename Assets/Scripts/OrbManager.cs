@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using Mediapipe.Unity.Sample.PoseLandmarkDetection;
 
@@ -13,8 +14,9 @@ namespace TaiChi
         [Header("Orb Prefab")]
         public GameObject OrbPrefab;
 
-        [Header("Depth from Camera")]
-        public float OrbDepth = 1.5f;
+        [Header("Settings")]
+        public float OrbDepth = 1f;
+        public float VisibilityThreshold = 0.5f;
 
         // 8 segments: (landmarkA, landmarkB, name)
         private static readonly (int a, int b, string label)[] Segments = {
@@ -28,55 +30,74 @@ namespace TaiChi
             (26, 28, "R_Calf"),
         };
 
-        // Track instantiated orbs — null means not currently in scene
         private GameObject[] _orbs;
+
+        // ── Thread-safe queue ────────────────────────────────────────
+        // MediaPipe fires callbacks on a background thread.
+        // We store the latest result here and process it in Update()
+        // which runs on the main thread where Unity API calls are safe.
+        private PoseLandmarkerResult? _pendingResult = null;
+        private bool _hasNewResult = false;
+        private readonly object _lock = new object();
 
         private void Start()
         {
             if (MainCamera == null)
                 MainCamera = Camera.main;
 
-            // Initialize array with nulls — no orbs spawned yet
             _orbs = new GameObject[Segments.Length];
 
-            SubscribeToRunner();
-        }
-
-        private void SubscribeToRunner()
-        {
             if (Runner == null)
                 Runner = Object.FindFirstObjectByType<PoseLandmarkerRunner_edited>();
 
             if (Runner != null)
             {
                 Runner.OnResultOutput += HandleResult;
-                Debug.Log("[OrbManager] Subscribed to PoseLandmarkerRunner.");
+                Debug.Log("[OrbManager] Subscribed to PoseLandmarkerRunner_edited.");
             }
             else
             {
-                Debug.LogError("[OrbManager] PoseLandmarkerRunner not found! Drag it into the Inspector.");
+                Debug.LogError("[OrbManager] PoseLandmarkerRunner_edited not found!");
             }
         }
 
-        private void OnDestroy()
-        {
-            if (Runner != null)
-                Runner.OnResultOutput -= HandleResult;
-
-            // Clean up any remaining orbs
-            DestroyAllOrbs();
-        }
-
+        // Called on background thread by MediaPipe — only store the result
         private void HandleResult(PoseLandmarkerResult result)
         {
-            // No person detected — destroy all orbs
+            lock (_lock)
+            {
+                _pendingResult = result;
+                _hasNewResult = true;
+            }
+        }
+
+        // Called on main thread every frame — safe to use Unity API here
+        private void Update()
+        {
+            PoseLandmarkerResult? result = null;
+
+            lock (_lock)
+            {
+                if (_hasNewResult)
+                {
+                    result = _pendingResult;
+                    _hasNewResult = false;
+                }
+            }
+
+            if (result.HasValue)
+                ProcessResult(result.Value);
+        }
+
+        private void ProcessResult(PoseLandmarkerResult result)
+        {
+            // No person detected
             if (result.poseLandmarks == null || result.poseLandmarks.Count == 0)
             {
                 DestroyAllOrbs();
                 return;
             }
 
-            // Get first detected person's landmarks
             var landmarks = result.poseLandmarks[0].landmarks;
 
             if (landmarks == null || landmarks.Count < 29)
@@ -90,8 +111,8 @@ namespace TaiChi
                 var lmA = landmarks[Segments[i].a];
                 var lmB = landmarks[Segments[i].b];
 
-                // Landmark not visible — destroy this orb if it exists
-                if (lmA.visibility < 0.5f || lmB.visibility < 0.5f)
+                // Joint not visible enough — destroy orb
+                if (lmA.visibility < VisibilityThreshold || lmB.visibility < VisibilityThreshold)
                 {
                     if (_orbs[i] != null)
                     {
@@ -101,23 +122,21 @@ namespace TaiChi
                     continue;
                 }
 
-                // Calculate midpoint in normalized coords
+                // Midpoint between the two landmarks (normalized 0-1)
                 float midX = (lmA.x + lmB.x) / 2f;
                 float midY = (lmA.y + lmB.y) / 2f;
 
-                // Convert to world position
+                // Safe to call ViewportToWorldPoint here — we are on main thread
                 Vector3 worldPos = NormalizedToWorld(midX, midY);
 
                 if (_orbs[i] == null)
                 {
-                    // Orb does not exist yet — instantiate it
                     _orbs[i] = Instantiate(OrbPrefab, worldPos, Quaternion.identity);
                     _orbs[i].name = $"Orb_{Segments[i].label}";
-                    Debug.Log($"[OrbManager] Instantiated {_orbs[i].name}");
+                    Debug.Log($"[OrbManager] Spawned {_orbs[i].name}");
                 }
                 else
                 {
-                    // Orb already exists — just move it
                     _orbs[i].transform.position = worldPos;
                 }
             }
@@ -125,8 +144,8 @@ namespace TaiChi
 
         private Vector3 NormalizedToWorld(float normX, float normY)
         {
-            // MediaPipe: x=0 is LEFT, y=0 is TOP
-            // Unity viewport: x=0 is LEFT, y=0 is BOTTOM — flip Y
+            // MediaPipe: x=0 LEFT, y=0 TOP
+            // Unity viewport: x=0 LEFT, y=0 BOTTOM — flip Y
             float viewX = normX;
             float viewY = 1f - normY;
 
@@ -145,6 +164,14 @@ namespace TaiChi
                     _orbs[i] = null;
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (Runner != null)
+                Runner.OnResultOutput -= HandleResult;
+
+            DestroyAllOrbs();
         }
     }
 }
