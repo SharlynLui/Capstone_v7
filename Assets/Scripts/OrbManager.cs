@@ -196,7 +196,9 @@ namespace TaiChi
                 }
                 else
                 {
-                    _orbs[i].transform.position = worldPos;
+                    //_orbs[i].transform.position = worldPos;
+                    float smoothSpeed = 15f; // Higher = faster tracking, Lower = smoother but slower, 10-15 is a good range to test
+                    _orbs[i].transform.position = Vector3.Lerp(_orbs[i].transform.position, worldPos, Time.deltaTime * smoothSpeed);
                 }
             }
         }
