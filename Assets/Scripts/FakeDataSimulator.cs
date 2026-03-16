@@ -9,19 +9,13 @@ namespace TaiChi
         public float UpdateInterval = 1.0f;
         public float ScoreThreshold = 0.80f;
 
-        [Tooltip("If true, randomly generates scores. If false uses ManualScore.")]
+        [Tooltip("If true, randomly generates scores. If false uses ManualScore for all joints.")]
         public bool RandomScores = true;
 
         [Range(0f, 1f)]
         public float ManualScore = 0.85f;
 
-        // Event that OrbManager listens to
-        // Key = joint name, Value = score
-        public static event System.Action<Dictionary<string, float>> OnFakeScoresUpdated;
-
-        private float _timer = 0f;
-
-        // Matches ACTUAL keys from groupmate's JSON
+        // Matches ACTUAL keys from groupmate's JSON under "part scores"
         private static readonly string[] JointKeys = {
             "right_arm_upper_arm",
             "left_arm_upper_arm",
@@ -32,6 +26,12 @@ namespace TaiChi
             "right_leg_shin",
             "left_leg_shin",
         };
+
+        // Event fires with part scores dictionary
+        public static event System.Action<Dictionary<string, float>> OnFakeScoresUpdated;
+
+        private float _timer = 0f;
+        private int _seq = 0;
 
         private void Update()
         {
@@ -45,20 +45,49 @@ namespace TaiChi
 
         private void SendFakeScores()
         {
-            var scores = new Dictionary<string, float>();
+            _seq++;
+
+            var partScores = new Dictionary<string, float>();
+            float total = 0f;
 
             foreach (var key in JointKeys)
             {
-                scores[key] = RandomScores
+                float score = RandomScores
                     ? Random.Range(0.5f, 1.0f)
                     : ManualScore;
+                partScores[key] = score;
+                total += score;
             }
 
-            // Log for debugging
-            foreach (var kvp in scores)
-                Debug.Log($"[FakeData] {kvp.Key}: {kvp.Value:F2} → {(kvp.Value >= ScoreThreshold ? "BLUE" : "RED")}");
+            float overall = total / JointKeys.Length;
 
-            OnFakeScoresUpdated?.Invoke(scores);
+            // Build JSON matching EXACT format:
+            // { "seq": 324, "overall score": 0.891, "part scores": { ... } }
+            string json = BuildJson(_seq, overall, partScores);
+            Debug.Log($"[FakeDataSimulator] seq:{_seq} overall:{overall:F3}\n{json}");
+
+            OnFakeScoresUpdated?.Invoke(partScores);
+        }
+
+        private string BuildJson(int seq, float overall, Dictionary<string, float> parts)
+        {
+            var partBuilder = new System.Text.StringBuilder();
+            int count = 0;
+            foreach (var kvp in parts)
+            {
+                partBuilder.Append($"\"{kvp.Key}\": {kvp.Value:F3}");
+                if (count < parts.Count - 1) partBuilder.Append(", ");
+                count++;
+            }
+
+            // Exact format from groupmate
+            return "{\n" +
+                   $"  \"seq\": {seq},\n" +
+                   $"  \"overall score\": {overall:F3},\n" +
+                   $"  \"part scores\": {{\n" +
+                   $"    {partBuilder.ToString().Replace(", ", ",\n    ")}\n" +
+                   $"  }}\n" +
+                   $"}}";
         }
     }
 }

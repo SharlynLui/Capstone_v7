@@ -12,15 +12,17 @@ namespace TaiChi
         public Camera MainCamera;
 
         [Header("Orb Prefabs")]
-        public GameObject BlueOrbPrefab;  // Correct form (score >= threshold)
-        public GameObject RedOrbPrefab;   // Incorrect form (score < threshold)
+        public GameObject BlueOrbPrefab;  // Correct form
+        public GameObject RedOrbPrefab;   // Incorrect form
 
         [Header("Settings")]
         public float VisibilityThreshold = 0.5f;
-        public float OrbDepth = 1.0f;
+        public float OrbDepth = 1.0f;     // Distance from camera lens
+        public float ZScale = 2.0f;       // Multiplier for depth movement (Adjust in Inspector)
         public float ScoreThreshold = 0.80f;
+        public float SmoothSpeed = 15f;
 
-        // 8 segments mapped to actual JSON keys from groupmate
+        // 8 segments mapped to actual JSON keys
         private static readonly (int a, int b, string scoreKey, string label)[] Segments = {
             (11, 13, "left_arm_upper_arm",  "L_UpperArm"),
             (12, 14, "right_arm_upper_arm", "R_UpperArm"),
@@ -34,19 +36,14 @@ namespace TaiChi
 
         private struct LandmarkData
         {
-            public float x, y, visibility;
+            public float x, y, z, visibility; // Added Z
         }
 
         private GameObject[] _orbs;
-        private bool[] _isCorrect; // true = blue, false = red
+        private bool[] _isCorrect;
 
         private readonly Queue<LandmarkData[]> _resultQueue = new Queue<LandmarkData[]>();
         private readonly object _lock = new object();
-
-        private void Awake()
-        {
-            Debug.Log("[OrbManager] Awake called.");
-        }
 
         private void Start()
         {
@@ -54,28 +51,16 @@ namespace TaiChi
                 MainCamera = Camera.main;
 
             _orbs = new GameObject[Segments.Length];
-
-            // Default all orbs to blue
             _isCorrect = new bool[Segments.Length];
-            for (int i = 0; i < _isCorrect.Length; i++)
-                _isCorrect[i] = true;
+            for (int i = 0; i < _isCorrect.Length; i++) _isCorrect[i] = true;
 
             if (Runner == null)
                 Runner = Object.FindFirstObjectByType<PoseLandmarkerRunner_edited>();
 
             if (Runner != null)
-            {
                 Runner.OnResultOutput += HandleResult;
-                Debug.Log("[OrbManager] Subscribed to PoseLandmarkerRunner_edited.");
-            }
-            else
-            {
-                Debug.LogError("[OrbManager] PoseLandmarkerRunner_edited not found!");
-            }
 
-            // Subscribe to fake data simulator
             FakeDataSimulator.OnFakeScoresUpdated += HandleScoresUpdated;
-            Debug.Log("[OrbManager] Subscribed to FakeDataSimulator.");
         }
 
         private void OnDestroy()
@@ -87,8 +72,6 @@ namespace TaiChi
             DestroyAllOrbs();
         }
 
-        // Called every UpdateInterval seconds by FakeDataSimulator
-        // (Later replaced by real MQTT data)
         private void HandleScoresUpdated(Dictionary<string, float> scores)
         {
             for (int i = 0; i < Segments.Length; i++)
@@ -100,10 +83,8 @@ namespace TaiChi
                 bool wasCorrect = _isCorrect[i];
                 _isCorrect[i] = score >= ScoreThreshold;
 
-                // Destroy orb so it respawns with correct color prefab
                 if (wasCorrect != _isCorrect[i])
                 {
-                    Debug.Log($"[OrbManager] {Segments[i].label} → {(_isCorrect[i] ? "BLUE" : "RED")} (score:{score:F2})");
                     if (_orbs[i] != null)
                     {
                         Destroy(_orbs[i]);
@@ -113,7 +94,6 @@ namespace TaiChi
             }
         }
 
-        // Background thread — copy data immediately
         private void HandleResult(PoseLandmarkerResult result)
         {
             if (result.poseLandmarks == null || result.poseLandmarks.Count == 0)
@@ -136,6 +116,7 @@ namespace TaiChi
                 {
                     x = landmarks[i].x,
                     y = landmarks[i].y,
+                    z = landmarks[i].z, // Capture AI Depth
                     visibility = landmarks[i].visibility.GetValueOrDefault(0f)
                 };
             }
@@ -143,7 +124,6 @@ namespace TaiChi
             lock (_lock) { _resultQueue.Enqueue(copy); }
         }
 
-        // Main thread
         private void Update()
         {
             while (true)
@@ -182,11 +162,13 @@ namespace TaiChi
                     continue;
                 }
 
+                // Average the X, Y, and Z for the segment center
                 float midX = (lmA.x + lmB.x) / 2f;
                 float midY = (lmA.y + lmB.y) / 2f;
-                Vector3 worldPos = NormalizedToWorld(midX, midY);
+                float midZ = (lmA.z + lmB.z) / 2f;
 
-                // Pick prefab based on current score state
+                Vector3 worldPos = NormalizedToWorld(midX, midY, midZ);
+
                 GameObject prefab = _isCorrect[i] ? BlueOrbPrefab : RedOrbPrefab;
 
                 if (_orbs[i] == null)
@@ -196,19 +178,19 @@ namespace TaiChi
                 }
                 else
                 {
-                    //_orbs[i].transform.position = worldPos;
-                    float smoothSpeed = 15f; // Higher = faster tracking, Lower = smoother but slower, 10-15 is a good range to test
-                    _orbs[i].transform.position = Vector3.Lerp(_orbs[i].transform.position, worldPos, Time.deltaTime * smoothSpeed);
+                    // Smooth 3D movement using Lerp
+                    _orbs[i].transform.position = Vector3.Lerp(_orbs[i].transform.position, worldPos, Time.deltaTime * SmoothSpeed);
                 }
             }
         }
 
-        private Vector3 NormalizedToWorld(float normX, float normY)
+        private Vector3 NormalizedToWorld(float normX, float normY, float normZ)
         {
             float viewX, viewY;
 
             if (Application.isMobilePlatform)
             {
+                // Orientation correction for Landscape Left
                 viewX = 1f - normY;
                 viewY = 1f - normX;
             }
@@ -218,7 +200,11 @@ namespace TaiChi
                 viewY = 1f - normY;
             }
 
-            return MainCamera.ViewportToWorldPoint(new Vector3(viewX, viewY, OrbDepth));
+            // The Z value in ViewportToWorldPoint is the distance from camera lens.
+            // normZ is relative to the hips, so we add it to our base depth.
+            float worldZ = OrbDepth + (normZ * ZScale);
+
+            return MainCamera.ViewportToWorldPoint(new Vector3(viewX, viewY, worldZ));
         }
 
         private void DestroyAllOrbs()
