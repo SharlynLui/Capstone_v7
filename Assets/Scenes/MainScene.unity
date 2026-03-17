@@ -453,7 +453,7 @@ MonoBehaviour:
   brokerAddress: 54.79.62.237
   brokerPort: 8883
   topic: inference/result
-  useFakeData: 0
+  useFakeData: 1
 --- !u!1001 &1006057040
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -664,7 +664,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1142081499
 Transform:
   m_ObjectHideFlags: 0
@@ -693,9 +693,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TaiChi.FakeDataSimulator
   UpdateInterval: 1
-  ScoreThreshold: 0.8
   RandomScores: 1
-  ManualScore: 0.635
+  ManualScore: 0.85
 --- !u!224 &1229135957 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3259285889726014650, guid: 5713b959e3c77a58fb258133fc8e4aef, type: 3}

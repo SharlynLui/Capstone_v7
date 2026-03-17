@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Threading;
 using System.Text;
 
 namespace TaiChi
@@ -7,8 +8,7 @@ namespace TaiChi
     public class FakeDataSimulator : MonoBehaviour
     {
         [Header("Settings")]
-        public float UpdateInterval = 1.0f;
-        public float ScoreThreshold = 0.80f;
+        public float UpdateInterval = 0.02f; // 50Hz
 
         [Tooltip("If true, randomly generates scores. If false uses ManualScore for all joints.")]
         public bool RandomScores = true;
@@ -16,7 +16,7 @@ namespace TaiChi
         [Range(0f, 1f)]
         public float ManualScore = 0.85f;
 
-        // MATCHES ACTUAL KEYS FROM MQTT LOGS
+        // Matches the keys your OrbManager and MQTT Router expect
         private static readonly string[] JointKeys = {
             "right_arm_upper_arm",
             "left_arm_upper_arm",
@@ -28,68 +28,72 @@ namespace TaiChi
             "left_leg_shin",
         };
 
-        private float _timer = 0f;
+        private Thread _simThread;
+        private bool _isRunning = false;
         private int _seq = 0;
 
-        private void Update()
+        private void Start()
         {
-            _timer += Time.deltaTime;
-            if (_timer >= UpdateInterval)
+            _isRunning = true;
+            _simThread = new Thread(SimLoop);
+            _simThread.IsBackground = true; // Ensures the thread dies if Unity crashes
+            _simThread.Start();
+            Debug.Log("[FakeDataSimulator] Threaded 50Hz simulation started.");
+        }
+
+        private void SimLoop()
+        {
+            while (_isRunning)
             {
-                _timer = 0f;
                 SendFakeScores();
+
+                // Sleep for the interval (e.g., 20ms for 50Hz)
+                int sleepMs = Mathf.Max(1, (int)(UpdateInterval * 1000));
+                Thread.Sleep(sleepMs);
             }
         }
 
         private void SendFakeScores()
         {
             _seq++;
-
             var partScores = new Dictionary<string, float>();
-            float total = 0f;
 
             foreach (var key in JointKeys)
             {
-                float score = RandomScores
-                    ? Random.Range(0.5f, 1.0f)
-                    : ManualScore;
+                // Note: We use System.Random because UnityEngine.Random is NOT thread-safe
+                float score;
+                if (RandomScores)
+                {
+                    // Generates a float between 0.5 and 1.0
+                    score = (float)(new System.Random().NextDouble() * 0.5 + 0.5);
+                }
+                else
+                {
+                    score = ManualScore;
+                }
                 partScores[key] = score;
-                total += score;
             }
 
-            float overall = total / JointKeys.Length;
-
-            // --- CRITICAL MATCHING SECTION ---
-            // We build the JSON to match your MQTT logs: {"scores": {"overall": X, "part": { ... }}}
-            string json = BuildMqttMatchedJson(_seq, overall, partScores);
-
-            // This ensures the OrbManager reacts even if MQTT is disconnected
-            ScoreEventBus.Publish(partScores);
-
-            Debug.Log($"[FakeDataSimulator] Simulated MQTT Message:\n{json}");
+            // Dispatching back to Main Thread for EventBus/Unity UI safety
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                ScoreEventBus.Publish(partScores);
+            });
         }
 
-        private string BuildMqttMatchedJson(int seq, float overall, Dictionary<string, float> parts)
+        private void OnDisable()
         {
-            StringBuilder partBuilder = new StringBuilder();
-            int count = 0;
-            foreach (var kvp in parts)
-            {
-                partBuilder.Append($"\"{kvp.Key}\": {kvp.Value:F3}");
-                if (count < parts.Count - 1) partBuilder.Append(", ");
-                count++;
-            }
+            _isRunning = false;
+        }
 
-            // This structure now matches your MQTTVisualizer/Router logic perfectly
-            return "{\n" +
-                   $"  \"seq\": {seq},\n" +
-                   "  \"scores\": {\n" +
-                   $"    \"overall\": {overall:F3},\n" +
-                   "    \"part\": {\n" +
-                   $"      {partBuilder.ToString().Replace(", ", ",\n      ")}\n" +
-                   "    }\n" +
-                   "  }\n" +
-                   "}";
+        private void OnDestroy()
+        {
+            _isRunning = false;
+            if (_simThread != null && _simThread.IsAlive)
+            {
+                _simThread.Join(500); // Give it 500ms to close gracefully
+                _simThread.Abort();
+            }
         }
     }
 }
