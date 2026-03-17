@@ -15,12 +15,12 @@ namespace TaiChi
 
         private void OnEnable()
         {
-            FakeDataSimulator.OnFakeScoresUpdated += HandleScoresUpdated;
+            ScoreEventBus.OnScoresUpdated += HandleScoresUpdated;
         }
 
         private void OnDisable()
         {
-            FakeDataSimulator.OnFakeScoresUpdated -= HandleScoresUpdated;
+            ScoreEventBus.OnScoresUpdated -= HandleScoresUpdated;
         }
 
         // ── Score Handler ────────────────────────────────────────────

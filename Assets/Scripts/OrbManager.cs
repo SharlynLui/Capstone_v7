@@ -18,11 +18,10 @@ namespace TaiChi
         [Header("Settings")]
         public float VisibilityThreshold = 0.5f;
         public float OrbDepth = 1.0f;     // Distance from camera lens
-        public float ZScale = 2.0f;       // Multiplier for depth movement (Adjust in Inspector)
+        public float ZScale = 2.0f;       // Multiplier for depth movement
         public float ScoreThreshold = 0.80f;
         public float SmoothSpeed = 15f;
 
-        // 8 segments mapped to actual JSON keys
         private static readonly (int a, int b, string scoreKey, string label)[] Segments = {
             (11, 13, "left_arm_upper_arm",  "L_UpperArm"),
             (12, 14, "right_arm_upper_arm", "R_UpperArm"),
@@ -36,7 +35,7 @@ namespace TaiChi
 
         private struct LandmarkData
         {
-            public float x, y, z, visibility; // Added Z
+            public float x, y, z, visibility;
         }
 
         private GameObject[] _orbs;
@@ -54,13 +53,17 @@ namespace TaiChi
             _isCorrect = new bool[Segments.Length];
             for (int i = 0; i < _isCorrect.Length; i++) _isCorrect[i] = true;
 
+            // MediaPipe Subscription
             if (Runner == null)
                 Runner = Object.FindFirstObjectByType<PoseLandmarkerRunner_edited>();
 
             if (Runner != null)
                 Runner.OnResultOutput += HandleResult;
 
-            FakeDataSimulator.OnFakeScoresUpdated += HandleScoresUpdated;
+            // --- KEY CHANGE HERE ---
+            // Subscribe to the central Event Bus instead of the Fake Simulator directly
+            ScoreEventBus.OnScoresUpdated += HandleScoresUpdated;
+            Debug.Log("[OrbManager] Subscribed to ScoreEventBus.");
         }
 
         private void OnDestroy()
@@ -68,7 +71,8 @@ namespace TaiChi
             if (Runner != null)
                 Runner.OnResultOutput -= HandleResult;
 
-            FakeDataSimulator.OnFakeScoresUpdated -= HandleScoresUpdated;
+            // --- KEY CHANGE HERE ---
+            ScoreEventBus.OnScoresUpdated -= HandleScoresUpdated;
             DestroyAllOrbs();
         }
 
@@ -83,6 +87,7 @@ namespace TaiChi
                 bool wasCorrect = _isCorrect[i];
                 _isCorrect[i] = score >= ScoreThreshold;
 
+                // If correctness changed, delete the old orb so PlaceOrbs respawns it with the new color prefab
                 if (wasCorrect != _isCorrect[i])
                 {
                     if (_orbs[i] != null)
@@ -116,7 +121,7 @@ namespace TaiChi
                 {
                     x = landmarks[i].x,
                     y = landmarks[i].y,
-                    z = landmarks[i].z, // Capture AI Depth
+                    z = landmarks[i].z,
                     visibility = landmarks[i].visibility.GetValueOrDefault(0f)
                 };
             }
@@ -162,7 +167,6 @@ namespace TaiChi
                     continue;
                 }
 
-                // Average the X, Y, and Z for the segment center
                 float midX = (lmA.x + lmB.x) / 2f;
                 float midY = (lmA.y + lmB.y) / 2f;
                 float midZ = (lmA.z + lmB.z) / 2f;
@@ -178,7 +182,6 @@ namespace TaiChi
                 }
                 else
                 {
-                    // Smooth 3D movement using Lerp
                     _orbs[i].transform.position = Vector3.Lerp(_orbs[i].transform.position, worldPos, Time.deltaTime * SmoothSpeed);
                 }
             }
@@ -190,7 +193,6 @@ namespace TaiChi
 
             if (Application.isMobilePlatform)
             {
-                // Orientation correction for Landscape Left
                 viewX = 1f - normY;
                 viewY = 1f - normX;
             }
@@ -200,10 +202,7 @@ namespace TaiChi
                 viewY = 1f - normY;
             }
 
-            // The Z value in ViewportToWorldPoint is the distance from camera lens.
-            // normZ is relative to the hips, so we add it to our base depth.
             float worldZ = OrbDepth + (normZ * ZScale);
-
             return MainCamera.ViewportToWorldPoint(new Vector3(viewX, viewY, worldZ));
         }
 

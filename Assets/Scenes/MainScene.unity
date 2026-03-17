@@ -400,6 +400,7 @@ GameObject:
   m_Component:
   - component: {fileID: 992381501}
   - component: {fileID: 992381502}
+  - component: {fileID: 992381503}
   m_Layer: 0
   m_Name: DataManager
   m_TagString: Untagged
@@ -437,6 +438,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TaiChi.ScoreReader
   roundFillController: {fileID: 1786592018}
   animationSpeed: 1
+--- !u!114 &992381503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 992381500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e01f8cbef541e54e830deea4dfd2678, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MQTTDataRouter
+  brokerAddress: 54.79.62.237
+  brokerPort: 8883
+  topic: inference/result
+  useFakeData: 0
 --- !u!1001 &1006057040
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -647,7 +664,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1142081499
 Transform:
   m_ObjectHideFlags: 0
@@ -695,6 +712,98 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1267016265
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1267016267}
+  - component: {fileID: 1267016266}
+  m_Layer: 0
+  m_Name: MainThreadDispatcher
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1267016266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1267016265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b10ea22ebf962349a65887310b26d70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainThreadDispatcher
+--- !u!4 &1267016267
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1267016265}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 35.44877, y: 0, z: -19.56453}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1405981862
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1405981864}
+  - component: {fileID: 1405981863}
+  m_Layer: 0
+  m_Name: MQTTClient
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1405981863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1405981862}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a3f34507ef2d1343b705ed354315b86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MQTTVisualizer
+  brokerAddress: 54.79.62.237
+  brokerPort: 8883
+  topic: inference/result
+  mqttMessageText: {fileID: 0}
+--- !u!4 &1405981864
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1405981862}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 35.44877, y: 0, z: -19.56453}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1446475460
 GameObject:
   m_ObjectHideFlags: 0
@@ -731,7 +840,9 @@ MonoBehaviour:
   RedOrbPrefab: {fileID: 2118552914552635879, guid: f088c702b3557fe49970f7ecae9fd891, type: 3}
   VisibilityThreshold: 0.5
   OrbDepth: 2
-  ScoreThreshold: 0.8
+  ZScale: 2
+  ScoreThreshold: 0.9
+  SmoothSpeed: 15
 --- !u!224 &1446475462
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1215,3 +1326,5 @@ SceneRoots:
   - {fileID: 1064799461}
   - {fileID: 1446475462}
   - {fileID: 992381501}
+  - {fileID: 1267016267}
+  - {fileID: 1405981864}

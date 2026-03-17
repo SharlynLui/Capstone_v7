@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Text;
 
 namespace TaiChi
 {
@@ -15,7 +16,7 @@ namespace TaiChi
         [Range(0f, 1f)]
         public float ManualScore = 0.85f;
 
-        // Matches ACTUAL keys from groupmate's JSON under "part scores"
+        // MATCHES ACTUAL KEYS FROM MQTT LOGS
         private static readonly string[] JointKeys = {
             "right_arm_upper_arm",
             "left_arm_upper_arm",
@@ -26,9 +27,6 @@ namespace TaiChi
             "right_leg_shin",
             "left_leg_shin",
         };
-
-        // Event fires with part scores dictionary
-        public static event System.Action<Dictionary<string, float>> OnFakeScoresUpdated;
 
         private float _timer = 0f;
         private int _seq = 0;
@@ -61,17 +59,19 @@ namespace TaiChi
 
             float overall = total / JointKeys.Length;
 
-            // Build JSON matching EXACT format:
-            // { "seq": 324, "overall score": 0.891, "part scores": { ... } }
-            string json = BuildJson(_seq, overall, partScores);
-            Debug.Log($"[FakeDataSimulator] seq:{_seq} overall:{overall:F3}\n{json}");
+            // --- CRITICAL MATCHING SECTION ---
+            // We build the JSON to match your MQTT logs: {"scores": {"overall": X, "part": { ... }}}
+            string json = BuildMqttMatchedJson(_seq, overall, partScores);
 
-            OnFakeScoresUpdated?.Invoke(partScores);
+            // This ensures the OrbManager reacts even if MQTT is disconnected
+            ScoreEventBus.Publish(partScores);
+
+            Debug.Log($"[FakeDataSimulator] Simulated MQTT Message:\n{json}");
         }
 
-        private string BuildJson(int seq, float overall, Dictionary<string, float> parts)
+        private string BuildMqttMatchedJson(int seq, float overall, Dictionary<string, float> parts)
         {
-            var partBuilder = new System.Text.StringBuilder();
+            StringBuilder partBuilder = new StringBuilder();
             int count = 0;
             foreach (var kvp in parts)
             {
@@ -80,14 +80,16 @@ namespace TaiChi
                 count++;
             }
 
-            // Exact format from groupmate
+            // This structure now matches your MQTTVisualizer/Router logic perfectly
             return "{\n" +
                    $"  \"seq\": {seq},\n" +
-                   $"  \"overall score\": {overall:F3},\n" +
-                   $"  \"part scores\": {{\n" +
-                   $"    {partBuilder.ToString().Replace(", ", ",\n    ")}\n" +
-                   $"  }}\n" +
-                   $"}}";
+                   "  \"scores\": {\n" +
+                   $"    \"overall\": {overall:F3},\n" +
+                   "    \"part\": {\n" +
+                   $"      {partBuilder.ToString().Replace(", ", ",\n      ")}\n" +
+                   "    }\n" +
+                   "  }\n" +
+                   "}";
         }
     }
 }
