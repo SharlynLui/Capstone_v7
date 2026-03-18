@@ -12,13 +12,13 @@ namespace TaiChi
         public Camera MainCamera;
 
         [Header("Orb Prefabs")]
-        public GameObject BlueOrbPrefab;  // Correct form
-        public GameObject RedOrbPrefab;   // Incorrect form
+        public GameObject BlueOrbPrefab;
+        public GameObject RedOrbPrefab; 
 
         [Header("Settings")]
         public float VisibilityThreshold = 0.5f;
         public float OrbDepth = 1.0f;     // Distance from camera lens
-        public float ZScale = 2.0f;       // Multiplier for depth movement
+        public float ZScale = 1.0f;       // Multiplier for depth movement
         public float ScoreThreshold = 0.80f;
         public float SmoothSpeed = 15f;
 
@@ -44,6 +44,19 @@ namespace TaiChi
         private readonly Queue<LandmarkData[]> _resultQueue = new Queue<LandmarkData[]>();
         private readonly object _lock = new object();
 
+
+        private float[] _lastSwapTime;
+        public float MinSwapInterval = 0.2f; // Orbs must stay a color for at least 200ms
+
+        public GameObject GetOrbAtIndex(int index)
+        {
+            if (_orbs != null && index < _orbs.Length)
+            {
+                return _orbs[index];
+            }
+            return null;
+        }
+
         private void Start()
         {
             if (MainCamera == null)
@@ -64,6 +77,9 @@ namespace TaiChi
             // Subscribe to the central Event Bus instead of the Fake Simulator directly
             ScoreEventBus.OnScoresUpdated += HandleScoresUpdated;
             Debug.Log("[OrbManager] Subscribed to ScoreEventBus.");
+
+
+            _lastSwapTime = new float[Segments.Length];
         }
 
         private void OnDestroy()
@@ -84,16 +100,22 @@ namespace TaiChi
                 if (!scores.ContainsKey(key)) continue;
 
                 float score = scores[key];
-                bool wasCorrect = _isCorrect[i];
-                _isCorrect[i] = score >= ScoreThreshold;
+                bool newCorrectState = score >= ScoreThreshold;
 
-                // If correctness changed, delete the old orb so PlaceOrbs respawns it with the new color prefab
-                if (wasCorrect != _isCorrect[i])
+                // ONLY swap if the state is different AND enough time has passed
+                if (newCorrectState != _isCorrect[i])
                 {
-                    if (_orbs[i] != null)
+                    if (Time.time - _lastSwapTime[i] >= MinSwapInterval)
                     {
-                        Destroy(_orbs[i]);
-                        _orbs[i] = null;
+                        _isCorrect[i] = newCorrectState;
+                        _lastSwapTime[i] = Time.time;
+
+                        // Clear existing orb so it respawns with the new color
+                        if (_orbs[i] != null)
+                        {
+                            Destroy(_orbs[i]);
+                            _orbs[i] = null;
+                        }
                     }
                 }
             }
@@ -213,6 +235,18 @@ namespace TaiChi
             {
                 if (_orbs[i] != null) { Destroy(_orbs[i]); _orbs[i] = null; }
             }
+        }
+
+        public Vector3 GetFootMidpoint()
+        {
+            // Index 6 and 7 in your 'Segments' array are the Shins/Ankles
+            if (_orbs[6] != null && _orbs[7] != null)
+            {
+                return (_orbs[6].transform.position + _orbs[7].transform.position) / 2f;
+            }
+
+            // Fallback: If orbs aren't active, return zero
+            return Vector3.zero;
         }
     }
 }

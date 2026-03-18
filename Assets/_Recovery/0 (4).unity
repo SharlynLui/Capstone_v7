@@ -242,15 +242,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalPosition.x
@@ -262,7 +262,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -491
+      value: -10
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalRotation.w
@@ -282,11 +282,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 198
+      value: 358
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 190
+      value: 738
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -302,7 +302,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573492, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_Name
-      value: ImgFillRound
+      value: ScoreMeter
       objectReference: {fileID: 0}
     - target: {fileID: 1899898030116799272, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_IsActive
@@ -468,7 +468,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TaiChi.EnvironmentEffects
   EffectPrefab: {fileID: 4549909302702590981, guid: 4e5dac4dd1821274a8d03c308e09f4b2, type: 3}
-  OrbManagerRef: {fileID: 1446475461}
+  OrbManagerRef: {fileID: 0}
   EffectDuration: 2
   CooldownDuration: 5
 --- !u!1001 &1006057040

@@ -27,8 +27,6 @@ namespace TaiChi
 
         private void HandleScoresUpdated(Dictionary<string, float> scores)
         {
-            // Calculate overall as average of all part scores
-            // (matches how groupmate computes overall in real MQTT data)
             float total = 0f;
             int count = 0;
 
@@ -40,15 +38,16 @@ namespace TaiChi
 
             float overall = count > 0 ? total / count : 0f;
 
-            Debug.Log($"[ScoreReader] Overall score: {overall:F2}");
-
-            // Update progress bar
+            // Update UI
             if (roundFillController != null)
                 roundFillController.SetValue(overall, false, animationSpeed);
 
-            //// Trigger environment effects
-            //if (EnvironmentEffects.Instance != null)
-            //    EnvironmentEffects.Instance.TriggerEffect(overall, 0.80f);
+            // TRIGGER EFFECTS
+            // We send the overall score and the 0.80f threshold to the manager
+            if (EnvironmentEffects.Instance != null)
+            {
+                EnvironmentEffects.Instance.UpdateEnvironmentalState(overall >= 0.80f);
+            }
         }
     }
 }

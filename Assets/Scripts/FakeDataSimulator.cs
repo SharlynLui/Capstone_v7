@@ -32,6 +32,7 @@ namespace TaiChi
         private bool _isRunning = false;
         private int _seq = 0;
 
+
         private void Start()
         {
             _isRunning = true;
