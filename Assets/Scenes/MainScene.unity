@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 5756899}
   - component: {fileID: 5756898}
   m_Layer: 5
-  m_Name: Start
+  m_Name: StartButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -147,7 +147,7 @@ RectTransform:
   m_GameObject: {fileID: 5756896}
   m_LocalRotation: {x: 0, y: 0, z: -0.7071068, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.739661, y: 3.1784956, z: 1}
+  m_LocalScale: {x: 2.3160107, y: 4.904043, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 136267824}
@@ -155,7 +155,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -90}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -56, y: 0}
+  m_AnchoredPosition: {x: 147, y: -0}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5756898
@@ -252,7 +252,7 @@ GameObject:
   - component: {fileID: 20633422}
   - component: {fileID: 20633421}
   m_Layer: 5
-  m_Name: Background
+  m_Name: BlueBackground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -265,17 +265,17 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 20633419}
-  m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4.943428, y: 3.8118374, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1901498574}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -130, y: 0}
-  m_SizeDelta: {x: -1820, y: -980}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 815, y: 528}
+  m_SizeDelta: {x: 1024, y: 1024}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &20633421
 MonoBehaviour:
@@ -314,7 +314,7 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 20633419}
-  m_CullTransparentMesh: 1
+  m_CullTransparentMesh: 0
 --- !u!1 &136267823
 GameObject:
   m_ObjectHideFlags: 0
@@ -575,15 +575,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.5
+      value: 1.5000001
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.5
+      value: 1.5000002
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.5
+      value: 1.4999998
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalPosition.x
@@ -595,7 +595,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalRotation.w
@@ -619,7 +619,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 327
+      value: 421
       objectReference: {fileID: 0}
     - target: {fileID: 1899898029282573491, guid: ba753ae0e84c12b4181d60b046674fb3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -1139,7 +1139,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -90}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 272, y: -51}
+  m_AnchoredPosition: {x: 403, y: -51}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1275806756
@@ -1482,6 +1482,7 @@ GameObject:
   - component: {fileID: 1901498577}
   - component: {fileID: 1901498576}
   - component: {fileID: 1901498575}
+  - component: {fileID: 1901498578}
   m_Layer: 5
   m_Name: StartPanel
   m_TagString: Untagged
@@ -1543,7 +1544,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 0}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1561,6 +1562,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1901498573}
   m_CullTransparentMesh: 1
+--- !u!114 &1901498578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901498573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8bccf2a5a0288a47937c317b3931386, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TaiChi.StartScreenController
+  StartCanvasGroup: {fileID: 1901498575}
+  StartButton: {fileID: 5756898}
+  MainHUD: {fileID: 0}
+  OrbManagerRef: {fileID: 1446475461}
+  FadeDuration: 1
 --- !u!1 &1969388814
 GameObject:
   m_ObjectHideFlags: 0
