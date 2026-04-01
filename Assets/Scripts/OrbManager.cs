@@ -248,5 +248,19 @@ namespace TaiChi
             // Fallback: If orbs aren't active, return zero
             return Vector3.zero;
         }
+
+        public void HideAllOrbs()
+        {
+            if (_orbs == null) return;
+            for (int i = 0; i < _orbs.Length; i++)
+            {
+                if (_orbs[i] != null)
+                {
+                    Destroy(_orbs[i]);
+                    _orbs[i] = null;
+                }
+            }
+            Debug.Log("[OrbManager] All orbs hidden.");
+        }
     }
 }
