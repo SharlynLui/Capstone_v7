@@ -1,3 +1,11 @@
+/* OrbManager controls all the orbs in the scene
+ * 
+ * If orbs are not showing, adjust VisibilityThreshold to lower the confidence mediapipe has so that orbs can be rendered on less confident points
+ * If orbs are moving too slowly, might want to adjust smoothspeed so that it catches up faster
+ * ZScale is the 3D coordinate for the orbs, adjust this if orbs are too far or too near
+ * 
+ */
+
 using UnityEngine;
 using System.Collections.Generic;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
@@ -16,11 +24,18 @@ namespace TaiChi
         public GameObject RedOrbPrefab; 
 
         [Header("Settings")]
-        public float VisibilityThreshold = 0.5f;
+        public float VisibilityThreshold = 0.5f; // Use this score to decide whether or not to show an orb
         public float OrbDepth = 1.0f;     // Distance from camera lens
         public float ZScale = 1.0f;       // Multiplier for depth movement
-        public float ScoreThreshold = 0.80f;
-        public float SmoothSpeed = 15f;
+        public float ScoreThreshold = 0.80f; // Threshold to change the orbs colour
+        public float SmoothSpeed = 20f; // Controls how fast the orbs catches up to data sent by MediaPipe
+
+        // OrbsThreshold Slider will update this
+        public void SetScoreThresholdFromSlider(float value)
+        {
+            ScoreThreshold = value;
+            Debug.Log($"[Cheat] Score Threshold updated to: {value}");
+        }
 
         private static readonly (int a, int b, string scoreKey, string label)[] Segments = {
             (11, 13, "left_arm_upper_arm",  "L_UpperArm"),
@@ -73,7 +88,6 @@ namespace TaiChi
             if (Runner != null)
                 Runner.OnResultOutput += HandleResult;
 
-            // --- KEY CHANGE HERE ---
             // Subscribe to the central Event Bus instead of the Fake Simulator directly
             ScoreEventBus.OnScoresUpdated += HandleScoresUpdated;
             Debug.Log("[OrbManager] Subscribed to ScoreEventBus.");
@@ -86,8 +100,6 @@ namespace TaiChi
         {
             if (Runner != null)
                 Runner.OnResultOutput -= HandleResult;
-
-            // --- KEY CHANGE HERE ---
             ScoreEventBus.OnScoresUpdated -= HandleScoresUpdated;
             DestroyAllOrbs();
         }

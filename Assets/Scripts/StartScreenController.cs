@@ -8,7 +8,7 @@ namespace TaiChi
     {
         [Header("UI References")]
         public CanvasGroup StartCanvasGroup;
-        public Button StartButton;
+        public Button FullPlayButton;
         public GameObject ScoreUI;
 
         [Header("Menu Icon")]
@@ -19,7 +19,15 @@ namespace TaiChi
         public OrbManager OrbManagerRef;  // Changed from MonoBehaviour to OrbManager
 
         [Header("Settings")]
-        public float FadeDuration = 1.5f;
+        public float FadeDuration = 1f;
+
+        public enum GameMode { FullPlay, Tutorial, Cheat }
+        private GameMode activeMode;
+
+        [Header("Cheat Mode References")]
+        public Button CheatButton;      // The button inside StartPanel
+        public GameObject CheatIcon;    // The special icon that opens sliders
+        public GameObject CheatPanel;
 
         private void Start()
         {
@@ -27,6 +35,8 @@ namespace TaiChi
             if (ScoreUI != null) ScoreUI.SetActive(false);
             if (MenuIcon != null) MenuIcon.SetActive(false);
             if (OrbManagerRef != null) OrbManagerRef.enabled = false;
+            if (CheatIcon != null) CheatIcon.SetActive(false);
+            if (CheatPanel != null) CheatPanel.SetActive(false);
 
             if (StartCanvasGroup != null)
             {
@@ -36,31 +46,86 @@ namespace TaiChi
             }
 
             // Wire buttons
-            if (StartButton != null)
-                StartButton.onClick.AddListener(OnStartPressed);
+            if (FullPlayButton != null)
+                FullPlayButton.onClick.AddListener(OnStartPressed);
             else
-                Debug.LogError("[StartScreenController] StartButton not assigned!");
+                Debug.LogError("[StartScreenController] FullPlayButton not assigned!");
 
             if (MenuIconButton != null)
                 MenuIconButton.onClick.AddListener(ReturnToMenu);
             else
                 Debug.LogWarning("[StartScreenController] MenuIconButton not assigned!");
+            if (CheatButton != null)
+                CheatButton.onClick.AddListener(OnCheatPressed);
+
         }
 
         // ── Start Button ─────────────────────────────────────────────
 
         private void OnStartPressed()
         {
-            StartButton.interactable = false;
+            activeMode = GameMode.FullPlay;
             StartCoroutine(TransitionToTraining());
+        }
+
+        private void OnCheatPressed()
+        {
+            activeMode = GameMode.Cheat;
+            StartCoroutine(TransitionToTraining());
+
+        }
+
+        public void ToggleCheatPanel()
+        {
+            if (CheatPanel != null)
+            {
+                // 1. Determine the new state: If panel is active, we are CLOSING it.
+                bool isOpening = !CheatPanel.activeSelf;
+
+                // 2. Set the Panel visibility
+                CheatPanel.SetActive(isOpening);
+
+                // 3. Reverse the visibility for Gameplay UI
+                // If the panel is OPENING (true), Gameplay UI should be HIDDEN (false)
+                bool showGameplayUI = !isOpening;
+
+                if (ScoreUI != null) ScoreUI.SetActive(showGameplayUI);
+                if (MenuIcon != null) MenuIcon.SetActive(showGameplayUI);
+                if (CheatIcon != null) CheatIcon.SetActive(showGameplayUI);
+
+                //// 4. Handle the OrbManager
+                //if (OrbManagerRef != null)
+                //{
+                //    if (isOpening)
+                //    {
+                //        // Stop the 50Hz updates and clear current orbs so they don't 
+                //        // float over your sliders.
+                //        OrbManagerRef.enabled = false;
+                //        OrbManagerRef.HideAllOrbs();
+                //    }
+                //    else
+                //    {
+                //        // Resume the tracking logic
+                //        OrbManagerRef.enabled = true;
+                //    }
+                //}
+
+                Debug.Log(isOpening ? "[Cheat] Panel Opened - Gameplay UI Hidden" : "[Cheat] Panel Closed - Gameplay UI Restored");
+            }
         }
 
         private IEnumerator TransitionToTraining()
         {
-            // Show ScoreUI and MenuIcon at the SAME time — before fade starts
+            // Show universal gameplay UI
             if (ScoreUI != null) ScoreUI.SetActive(true);
             if (MenuIcon != null) MenuIcon.SetActive(true);
             if (OrbManagerRef != null) OrbManagerRef.enabled = true;
+
+            // Mode-specific UI
+            if (activeMode == GameMode.Cheat && CheatIcon != null)
+            {
+                CheatIcon.SetActive(true);
+            }
 
             // Fade out start panel
             float elapsed = 0f;
@@ -91,6 +156,8 @@ namespace TaiChi
             // Hide all gameplay elements
             if (ScoreUI != null) ScoreUI.SetActive(false);
             if (MenuIcon != null) MenuIcon.SetActive(false);
+            if (CheatIcon != null) CheatIcon.SetActive(false);
+            if (CheatPanel != null) CheatPanel.SetActive(false);
             if (OrbManagerRef != null)
             {
                 OrbManagerRef.enabled = false;
@@ -107,8 +174,8 @@ namespace TaiChi
                 StartCanvasGroup.blocksRaycasts = true;
             }
 
-            if (StartButton != null)
-                StartButton.interactable = true;
+            if (FullPlayButton != null)
+                FullPlayButton.interactable = true;
 
             Debug.Log("[StartScreenController] Returned to menu.");
         }
