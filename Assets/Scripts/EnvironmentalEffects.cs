@@ -1,15 +1,36 @@
+/* Each of the effects are rendered randomly, can be adjusted such that only test out 1 result.
+ * X axis adjustmetns is actually up and down; Y axis adjustments are left and right
+ */
+
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace TaiChi
 {
-    public class EnvironmentEffects : MonoBehaviour
+    // A helper class to store individual settings for each effect
+    [System.Serializable]
+    public class EffectConfig
     {
-        public static EnvironmentEffects Instance;
+        public string EffectName;
+        public GameObject Prefab;
+        public Vector3 Offset = new Vector3(0, -0.5f, 0); // Defaulting Y to -0.5 to lower it
+        public float CustomScale = 1.0f;
+    }
+
+    public class EnvironmentalEffects : MonoBehaviour
+    {
+        public static EnvironmentalEffects Instance;
 
         [Header("References")]
-        public GameObject EffectPrefab;
         public OrbManager OrbManagerRef;
+
+        [Header("Effect Library")]
+        public List<EffectConfig> EffectsLibrary = new List<EffectConfig>();
+
+        [Header("Testing Mode")]
+        public bool UseStaticEffect = false; // Toggle this in Inspector to test one specific effect
+        public int StaticEffectIndex = 0;    // The index of the effect you want to test
 
         [Header("Timing")]
         public float EffectDuration = 2.0f;
@@ -24,14 +45,24 @@ namespace TaiChi
 
         public void UpdateEnvironmentalState(bool isAboveThreshold)
         {
-            if (isAboveThreshold && _canTrigger)
+            if (isAboveThreshold && _canTrigger && EffectsLibrary.Count > 0)
             {
-                // Get current foot position from the working OrbManager logic
                 Vector3 spawnPos = GetCorrectedSpawnPosition();
-
                 if (spawnPos != Vector3.zero)
                 {
-                    StartCoroutine(SpawnAndDestroyCycle(spawnPos));
+                    // Pick the effect configuration based on Test Mode
+                    EffectConfig selectedConfig;
+                    if (UseStaticEffect)
+                    {
+                        int index = Mathf.Clamp(StaticEffectIndex, 0, EffectsLibrary.Count - 1);
+                        selectedConfig = EffectsLibrary[index];
+                    }
+                    else
+                    {
+                        selectedConfig = EffectsLibrary[Random.Range(0, EffectsLibrary.Count)];
+                    }
+
+                    StartCoroutine(SpawnAndDestroyCycle(spawnPos, selectedConfig));
                 }
             }
         }
@@ -39,28 +70,27 @@ namespace TaiChi
         private Vector3 GetCorrectedSpawnPosition()
         {
             if (OrbManagerRef == null) return Vector3.zero;
-
-            // Use the helper you added to OrbManager
             return OrbManagerRef.GetFootMidpoint();
         }
 
-        private IEnumerator SpawnAndDestroyCycle(Vector3 position)
+        private IEnumerator SpawnAndDestroyCycle(Vector3 basePosition, EffectConfig config)
         {
             _canTrigger = false;
 
-            // 1. Get the base rotation from the camera (so it faces the right way)
+            // 1. Calculate the offset position relative to the base foot midpoint
+            Vector3 finalPos = basePosition + config.Offset;
+
+            // 2. Base rotation logic (proven working)
             Quaternion baseRotation = Quaternion.LookRotation(OrbManagerRef.MainCamera.transform.forward, OrbManagerRef.MainCamera.transform.up);
 
-            // 2. Spawn the object
-            GameObject spawnedEffect = Instantiate(EffectPrefab, position, baseRotation);
+            // 3. Spawn and Apply Scale
+            GameObject spawnedEffect = Instantiate(config.Prefab, finalPos, baseRotation);
+            spawnedEffect.transform.localScale *= config.CustomScale;
 
-            // 3. THE CORRECTION: Rotate it 90 degrees to fix the "Upright in X" issue
-            // If it's leaning left/right, rotate Z. If it's leaning forward/back, rotate X.
-            // Try Z first for Landscape Left issues:
+            // 4. Your proven 90-degree correction for Landscape/Phone orientation
             spawnedEffect.transform.Rotate(0, 0, 90f);
 
             yield return new WaitForSeconds(EffectDuration);
-
             if (spawnedEffect != null) Destroy(spawnedEffect);
 
             yield return new WaitForSeconds(CooldownDuration - EffectDuration);

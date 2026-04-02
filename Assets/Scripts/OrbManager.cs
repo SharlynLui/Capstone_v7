@@ -10,6 +10,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using Mediapipe.Unity.Sample.PoseLandmarkDetection;
+using TMPro;
 
 namespace TaiChi
 {
@@ -25,10 +26,13 @@ namespace TaiChi
 
         [Header("Settings")]
         public float VisibilityThreshold = 0.5f; // Use this score to decide whether or not to show an orb
-        public float OrbDepth = 1.0f;     // Distance from camera lens
-        public float ZScale = 1.0f;       // Multiplier for depth movement
+        public float OrbDepth = 2.0f;     // Distance from camera lens
+        public float ZScale = 2.0f;       // Multiplier for depth movement
         public float ScoreThreshold = 0.80f; // Threshold to change the orbs colour
         public float SmoothSpeed = 20f; // Controls how fast the orbs catches up to data sent by MediaPipe
+
+        [Header("UI Display")]
+        public TextMeshProUGUI SliderValueText;
 
         // OrbsThreshold Slider will update this
         public void SetScoreThresholdFromSlider(float value)
@@ -273,6 +277,27 @@ namespace TaiChi
                 }
             }
             Debug.Log("[OrbManager] All orbs hidden.");
+        }
+
+        public void UpdateScoreThreshold(float newValue)
+        {
+            // Keep the raw decimal (0.44) for the internal math logic
+            ScoreThreshold = newValue;
+
+            // 1. Convert to percentage for the UI display
+            // Multiply by 100 and use "F0" for no decimals (e.g., 80%)
+            // or "F1" if you want one decimal place (e.g., 80.5%)
+            if (SliderValueText != null)
+            {
+                float percentage = newValue * 100f;
+                SliderValueText.text = percentage.ToString("F0") + "%";
+            }
+
+            // 2. Console Print for your 0.44 manual data test
+            Debug.Log($"[Slider] Threshold: {ScoreThreshold * 100f:F0}% | Manual Data: 44%");
+
+            // Trigger refresh if needed
+            // if (_lastKnownScores != null) HandleScoresUpdated(_lastKnownScores);
         }
     }
 }
