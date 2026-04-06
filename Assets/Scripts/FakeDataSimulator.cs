@@ -58,24 +58,22 @@ namespace TaiChi
         {
             _seq++;
             var partScores = new Dictionary<string, float>();
+            float total = 0f;
 
             foreach (var key in JointKeys)
             {
-                // Note: We use System.Random because UnityEngine.Random is NOT thread-safe
                 float score;
                 if (RandomScores)
-                {
-                    // Generates a float between 0.5 and 1.0
                     score = (float)(new System.Random().NextDouble() * 0.5 + 0.5);
-                }
                 else
-                {
                     score = ManualScore;
-                }
+
                 partScores[key] = score;
+                total += score;
             }
 
-            // Dispatching back to Main Thread for EventBus/Unity UI safety
+            partScores["overall"] = total / JointKeys.Length; // ← add this
+
             MainThreadDispatcher.Enqueue(() =>
             {
                 ScoreEventBus.Publish(partScores);

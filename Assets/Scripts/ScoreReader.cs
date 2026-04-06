@@ -14,7 +14,11 @@ namespace TaiChi
         public float EnvThreshold = 0.8f; // Default 80%
 
         [Header("UI Display")]
-        public TextMeshProUGUI EnvValueText; 
+        public TextMeshProUGUI EnvValueText;
+        public UnityEngine.UI.Slider EnvSlider;
+
+        [Header("Debug Display")]
+        public TextMeshProUGUI MqttDebugText;
 
         // ── Environmental Effects Handler ────────────────────────────────────────────
         public void SetEnvThresholdFromSlider(float value)
@@ -39,6 +43,17 @@ namespace TaiChi
                 EnvironmentalEffects.Instance.UpdateEnvironmentalState(shouldTrigger);
             }
         }
+        public void ResetToDefaults()
+        {
+            // Set the internal logic
+            EnvThreshold = 0.8f;
+
+            // Sync the physical Slider handle
+            if (EnvSlider != null) EnvSlider.value = 0.8f;
+
+            // Sync the initial text box
+            if (EnvValueText != null) EnvValueText.text = "Default";
+        }
 
         // ── Lifecycle ────────────────────────────────────────────────
 
@@ -54,29 +69,67 @@ namespace TaiChi
 
         // ── Score Handler ────────────────────────────────────────────
 
+        // WITHOUT MQTT DEBUG 
+        //private void HandleScoresUpdated(Dictionary<string, float> scores)
+        //{
+        //    float total = 0f;
+        //    int count = 0;
+
+        //    foreach (var kvp in scores)
+        //    {
+        //        total += kvp.Value;
+        //        count++;
+        //    }
+
+        //    float overall = count > 0 ? total / count : 0f;
+
+        //    // Update the Progress Bar UI
+        //    if (roundFillController != null)
+        //        roundFillController.SetValue(overall, false, animationSpeed);
+
+        //    bool isAboveThreshold = overall >= EnvThreshold;
+
+        //    if (EnvironmentalEffects.Instance != null)
+        //    {
+        //        // Only triggers if real data (overall) above cheat slider (EnvThreshold)
+        //        EnvironmentalEffects.Instance.UpdateEnvironmentalState(isAboveThreshold);
+        //    }
+        //}
         private void HandleScoresUpdated(Dictionary<string, float> scores)
         {
-            float total = 0f;
-            int count = 0;
+            float overall;
 
-            foreach (var kvp in scores)
+            if (scores.TryGetValue("overall", out float providedOverall))
             {
-                total += kvp.Value;
-                count++;
+                overall = providedOverall; // Use the JSON-provided overall directly
+            }
+            else
+            {
+                // Fallback: average all keys (for FakeDataSimulator which has no overall key)
+                float total = 0f;
+                foreach (var kvp in scores)
+                    total += kvp.Value;
+                overall = scores.Count > 0 ? total / scores.Count : 0f;
             }
 
-            float overall = count > 0 ? total / count : 0f;
+            // 1. UPDATE THE DEBUG TEXT IMMEDIATELY (50Hz)
+            if (MqttDebugText != null)
+            {
+                // "F2" ensures you see the 0.44 precision
+                MqttDebugText.text = $"MQTT IN: {overall:F2} ({(overall * 100f):F0}%)";
 
-            // Update the Progress Bar UI
+                // Visual indicator: Green if passing, White if failing
+                MqttDebugText.color = overall >= EnvThreshold ? Color.green : Color.white;
+            }
+
+            // 2. Update the Progress Circle (Main UI)
             if (roundFillController != null)
                 roundFillController.SetValue(overall, false, animationSpeed);
 
-            bool isAboveThreshold = overall >= EnvThreshold;
-
+            // 3. Trigger Effects check
             if (EnvironmentalEffects.Instance != null)
             {
-                // Only triggers if real data (overall) above cheat slider (EnvThreshold)
-                EnvironmentalEffects.Instance.UpdateEnvironmentalState(isAboveThreshold);
+                EnvironmentalEffects.Instance.UpdateEnvironmentalState(overall >= EnvThreshold);
             }
         }
     }

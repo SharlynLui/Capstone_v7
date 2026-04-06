@@ -33,6 +33,7 @@ namespace TaiChi
 
         [Header("UI Display")]
         public TextMeshProUGUI SliderValueText;
+        public UnityEngine.UI.Slider OrbSlider;
 
         // OrbsThreshold Slider will update this
         public void SetScoreThresholdFromSlider(float value)
@@ -51,6 +52,18 @@ namespace TaiChi
             (25, 27, "left_leg_shin",       "L_Shin"),
             (26, 28, "right_leg_shin",      "R_Shin"),
         };
+        public void ResetToDefaults()
+        {
+            // Set the internal logic
+            // (OrbManager uses 'ScoreThreshold', ScoreReader uses 'EnvThreshold')
+            ScoreThreshold = 0.8f;
+
+            // Sync the physical Slider handle
+            if (OrbSlider != null) OrbSlider.value = 0.8f;
+
+            // Sync the initial text box
+            if (SliderValueText != null) SliderValueText.text = "Default";
+        }
 
         private struct LandmarkData
         {
@@ -294,7 +307,7 @@ namespace TaiChi
             }
 
             // 2. Console Print for your 0.44 manual data test
-            Debug.Log($"[Slider] Threshold: {ScoreThreshold * 100f:F0}% | Manual Data: 44%");
+            Debug.Log($"[Slider] Threshold: {ScoreThreshold * 100f:F0}%");
 
             // Trigger refresh if needed
             // if (_lastKnownScores != null) HandleScoresUpdated(_lastKnownScores);

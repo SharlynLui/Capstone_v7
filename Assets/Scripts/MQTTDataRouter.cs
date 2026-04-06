@@ -5,15 +5,9 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
-using System.Net.Security;
 using Newtonsoft.Json.Linq;
 using TaiChi;
 
-/// <summary>
-/// Connects to the same MQTT broker as MQTTVisualizer
-/// and routes part scores to OrbManager and ScoreReader.
-/// Does NOT touch groupmate's MQTTVisualizer code.
-/// </summary>
 public class MQTTDataRouter : MonoBehaviour
 {
     [Header("MQTT Settings — must match MQTTVisualizer")]
@@ -23,7 +17,7 @@ public class MQTTDataRouter : MonoBehaviour
 
     private MqttClient _client;
 
-    public bool useFakeData = false; // Toggle this in the Inspector
+    public bool useFakeData = false;
 
     void Start()
     {
@@ -50,7 +44,6 @@ public class MQTTDataRouter : MonoBehaviour
 
         try
         {
-            // Use different clientId from MQTTVisualizer so both can connect
             string clientId = "UnityDataRouter_" + Guid.NewGuid().ToString().Substring(0, 8);
             _client.Connect(clientId);
 
@@ -73,7 +66,6 @@ public class MQTTDataRouter : MonoBehaviour
         }
     }
 
-    // Background thread
     void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
     {
         string message = Encoding.UTF8.GetString(e.Message);
@@ -83,21 +75,32 @@ public class MQTTDataRouter : MonoBehaviour
         {
             JObject json = JObject.Parse(message);
 
-            // Inside OnMessageReceived in MQTTDataRouter.cs
-
             // 1. Navigate into the nested JSON structure
             var scoresObj = json["scores"];
             if (scoresObj == null) return;
 
-            var parts = scoresObj["part"]; // Look for "part" inside "scores"
+            var parts = scoresObj["part"];
             if (parts == null)
             {
                 Debug.LogWarning("[MQTTDataRouter] 'part' key not found under 'scores'.");
                 return;
             }
 
-            // 2. Clear and fill the dictionary
+            // 2. Fill the dictionary
             var partScores = new Dictionary<string, float>();
+
+            // Read overall directly from JSON
+            var overallToken = scoresObj["overall"];
+            if (overallToken != null && float.TryParse(overallToken.ToString(), out float overallScore))
+            {
+                partScores["overall"] = overallScore;
+            }
+            else
+            {
+                Debug.LogWarning("[MQTTDataRouter] 'overall' key not found under 'scores'.");
+            }
+
+            // Read part scores
             foreach (var part in parts.Children<JProperty>())
             {
                 if (float.TryParse(part.Value.ToString(), out float score))
@@ -106,12 +109,11 @@ public class MQTTDataRouter : MonoBehaviour
                 }
             }
 
-            // 3. Dispatch to your EventBus (Main Thread)
+            // 3. Dispatch to EventBus (Main Thread)
             MainThreadDispatcher.Enqueue(() =>
             {
                 ScoreEventBus.Publish(partScores);
-                // Add this debug log to confirm the orbs SHOULD be receiving data
-                Debug.Log($"[MQTTDataRouter] Successfully published {partScores.Count} scores to EventBus.");
+                Debug.Log($"[MQTTDataRouter] Published {partScores.Count} scores. Overall: {partScores.GetValueOrDefault("overall", -1f):F3}");
             });
         }
         catch (Exception ex)
