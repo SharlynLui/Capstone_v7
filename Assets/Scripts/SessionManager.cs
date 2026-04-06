@@ -87,6 +87,13 @@ namespace TaiChi
             if (StartSessionButton != null)
                 StartSessionButton.gameObject.SetActive(false);
 
+            // --- NEW: HIDE MENU ICON WHEN STARTING ---
+            // This ensures that as soon as the user commits to starting, the "Back" button disappears.
+            if (StartScreenController.Instance != null && StartScreenController.Instance.MenuIcon != null)
+            {
+                StartScreenController.Instance.MenuIcon.SetActive(false);
+            }
+
             // Show countdown text
             if (CountdownText != null)
                 CountdownText.gameObject.SetActive(true);
@@ -97,10 +104,6 @@ namespace TaiChi
                     CountdownText.text = i.ToString();
                 yield return new WaitForSeconds(1f);
             }
-
-            if (CountdownText != null)
-                CountdownText.text = "GO!";
-            yield return new WaitForSeconds(0.6f);
 
             // Hide countdown text
             if (CountdownText != null)

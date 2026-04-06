@@ -50,10 +50,6 @@ namespace TaiChi
 
             StringBuilder sb = new StringBuilder();
 
-            //// ── Header ────────────────────────────────────────────
-            //sb.AppendLine("<color=#FFD700><size=120%><b>SESSION SUMMARY</b></size></color>");
-            //sb.AppendLine();
-
             // ── Overall Score (large, prominent) ──────────────────
             string overallColor = ScoreHexColor(result.AverageOverall);
             sb.AppendLine("<color=#AAAAAA>OVERALL SCORE</color>");
@@ -67,16 +63,15 @@ namespace TaiChi
             sb.AppendLine($"<color=#AAAAAA>Consistency</color>  <color={consistencyColor}><b>{consistency}</b></color>");
             sb.AppendLine();
 
-            // ── Joint Breakdown ───────────────────────────────────
+            // ── Joint Breakdown ─────────────────────────────────────
             sb.AppendLine("<color=#FFD700><b>── Joint Breakdown ──</b></color>");
             foreach (var kvp in sorted)
             {
                 string color = ScoreHexColor(kvp.Value);
                 string name = FormatJointName(kvp.Key).PadRight(22);
                 string bar = ScoreBar(kvp.Value);
-                sb.AppendLine($"<color=#CCCCCC>{name}</color><color={color}>{bar}  {kvp.Value * 100f:F1}%</color>");
+                sb.AppendLine($"<size=70%><color=#CCCCCC>{name}</color><color={color}>{bar}  {kvp.Value * 100f:F1}%</color></size>");
             }
-            sb.AppendLine();
 
             // ── Focus Areas ───────────────────────────────────────
             sb.AppendLine("<color=#FFD700><b>── Focus Areas ──</b></color>");

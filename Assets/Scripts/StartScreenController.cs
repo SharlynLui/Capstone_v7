@@ -26,6 +26,10 @@ namespace TaiChi
         [Header("Summary Panel References")]
         public GameObject SummaryPanel;
 
+        [Header("Tutorial References")]
+        public Button TutorialButton;
+        public GameObject TutorialPanel;
+
         [Header("Settings")]
         public float FadeDuration = 1f;
 
@@ -47,7 +51,9 @@ namespace TaiChi
             if (CheatPanel != null) CheatPanel.SetActive(false);
             if (DebugIcon != null) DebugIcon.SetActive(false);
             if (DebugPanel != null) DebugPanel.SetActive(false);
-            if (SummaryPanel != null) SummaryPanel.SetActive(false);  // ← new
+            if (SummaryPanel != null) SummaryPanel.SetActive(false);
+            if (TutorialButton != null)
+                TutorialButton.onClick.AddListener(OnTutorialPressed);
 
             if (StartCanvasGroup != null)
             {
@@ -124,6 +130,13 @@ namespace TaiChi
             }
         }
 
+        // ── Tutorial Panel ───────────────────────────────────────────
+        private void OnTutorialPressed()
+        {
+            activeMode = GameMode.Tutorial;
+            StartCoroutine(TransitionToTraining());
+        }
+
         // ── Transition ────────────────────────────────────────────
         private IEnumerator TransitionToTraining()
         {
@@ -135,6 +148,16 @@ namespace TaiChi
                 CheatIcon.SetActive(true);
             if (activeMode == GameMode.Cheat && DebugIcon != null)
                 DebugIcon.SetActive(true);
+
+            if (activeMode == GameMode.FullPlay)
+            {
+                // 1. Show the Menu Icon so user can go back if they haven't started yet
+                if (MenuIcon != null) MenuIcon.SetActive(true);
+
+                // 2. Show the "Start Session" button from your SessionManager
+                if (SessionManager.Instance != null)
+                    SessionManager.Instance.ShowStartButton();
+            }
 
             // Fade out start panel
             float elapsed = 0f;
@@ -155,7 +178,11 @@ namespace TaiChi
 
             gameObject.SetActive(false);
 
-            // Show Start Session button only in FullPlay mode ← fix 1
+            // Tutorial mode start tutorial
+            if (activeMode == GameMode.Tutorial && TutorialController.Instance != null)
+                TutorialController.Instance.StartTutorial();
+
+            // Show Start Session button only in FullPlay mode
             if (activeMode == GameMode.FullPlay && SessionManager.Instance != null)
                 SessionManager.Instance.ShowStartButton();
 
@@ -205,6 +232,10 @@ namespace TaiChi
 
             if (FullPlayButton != null)
                 FullPlayButton.interactable = true;
+
+            if (TutorialPanel != null) TutorialPanel.SetActive(false);
+            if (TutorialController.Instance != null)
+                TutorialController.Instance.Reset();
 
             Debug.Log("[StartScreenController] Returned to menu.");
         }
