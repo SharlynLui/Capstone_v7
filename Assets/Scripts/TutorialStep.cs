@@ -15,5 +15,6 @@ namespace TaiChi
 
         public bool IsCheatModeStep;
         public bool IsPracticeIntro;
+        public bool HideArrow;
     }
 }

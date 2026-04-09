@@ -28,7 +28,7 @@ namespace TaiChi
         public float VisibilityThreshold = 0.5f; // Use this score to decide whether or not to show an orb
         public float OrbDepth = 2.0f;     // Distance from camera lens
         public float ZScale = 2.0f;       // Multiplier for depth movement
-        public float ScoreThreshold = 0.80f; // Threshold to change the orbs colour
+        public float ScoreThreshold = 0.40f; // Threshold to change the orbs colour
         public float SmoothSpeed = 20f; // Controls how fast the orbs catches up to data sent by MediaPipe
 
         [Header("UI Display")]
@@ -56,10 +56,10 @@ namespace TaiChi
         {
             // Set the internal logic
             // (OrbManager uses 'ScoreThreshold', ScoreReader uses 'EnvThreshold')
-            ScoreThreshold = 0.8f;
+            ScoreThreshold = 0.4f;
 
             // Sync the physical Slider handle
-            if (OrbSlider != null) OrbSlider.value = 0.8f;
+            if (OrbSlider != null) OrbSlider.value = 0.4f;
 
             // Sync the initial text box
             if (SliderValueText != null) SliderValueText.text = "Default";
@@ -126,9 +126,16 @@ namespace TaiChi
             for (int i = 0; i < Segments.Length; i++)
             {
                 string key = Segments[i].scoreKey;
+
+                // 1. Handle missing keys (existing logic)
                 if (!scores.ContainsKey(key)) continue;
 
                 float score = scores[key];
+
+                // 2. Handle -1 (or any negative value) for missing/invalid data
+                // If score is -1, we skip the color update so it stays the current color
+                if (score < 0) continue;
+
                 bool newCorrectState = score >= ScoreThreshold;
 
                 // ONLY swap if the state is different AND enough time has passed
