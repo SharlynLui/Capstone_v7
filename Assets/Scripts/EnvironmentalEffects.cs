@@ -1,5 +1,5 @@
 /* Each of the effects are rendered randomly, can be adjusted such that only test out 1 result.
- * X axis adjustmetns is actually up and down; Y axis adjustments are left and right
+ * X axis adjustments is actually up and down; Y axis adjustments are left and right
  */
 
 using UnityEngine;
@@ -8,13 +8,12 @@ using System.Collections.Generic;
 
 namespace TaiChi
 {
-    // A helper class to store individual settings for each effect
     [System.Serializable]
     public class EffectConfig
     {
         public string EffectName;
         public GameObject Prefab;
-        public Vector3 Offset = new Vector3(0, -0.5f, 0); // Defaulting Y to -0.5 to lower it
+        public Vector3 Offset = new Vector3(0, -0.5f, 0);
         public float CustomScale = 1.0f;
     }
 
@@ -29,13 +28,18 @@ namespace TaiChi
         public List<EffectConfig> EffectsLibrary = new List<EffectConfig>();
 
         [Header("Testing Mode")]
-        public bool UseStaticEffect = false; // Toggle this in Inspector to test one specific effect
-        public int StaticEffectIndex = 0;    // The index of the effect you want to test
+        public bool UseStaticEffect = false;
+        public int StaticEffectIndex = 0;
 
         [Header("Timing")]
         public float EffectDuration = 2.0f;
         public float CooldownDuration = 5.0f;
 
+        [Header("Simple Counter Settings")]
+        [Tooltip("Number of good data packets needed to trigger the effect")]
+        public int TriggerThreshold = 10;
+
+        private int _packetCounter = 0;
         private bool _canTrigger = true;
 
         private void Awake()
@@ -45,26 +49,43 @@ namespace TaiChi
 
         public void UpdateEnvironmentalState(bool isAboveThreshold)
         {
-            if (isAboveThreshold && _canTrigger && EffectsLibrary.Count > 0)
+            // 1. UPDATE THE COUNTER
+            if (isAboveThreshold)
             {
+                // Increase the bucket count
+                if (_packetCounter < TriggerThreshold) _packetCounter++;
+            }
+            else
+            {
+                // Decrease the bucket count (Leaky Bucket)
+                // This ignores 1 or 2 bad packets but kills the trigger if data stays bad
+                if (_packetCounter > 0) _packetCounter--;
+            }
+
+            // 2. TRIGGER LOGIC
+            // If the bucket is full AND we aren't currently waiting for a cooldown
+            if (_packetCounter >= TriggerThreshold && _canTrigger && EffectsLibrary.Count > 0)
+            {
+                // Reset counter so it doesn't instantly refire
+                _packetCounter = 0;
+
                 Vector3 spawnPos = GetCorrectedSpawnPosition();
                 if (spawnPos != Vector3.zero)
                 {
-                    // Pick the effect configuration based on Test Mode
-                    EffectConfig selectedConfig;
-                    if (UseStaticEffect)
-                    {
-                        int index = Mathf.Clamp(StaticEffectIndex, 0, EffectsLibrary.Count - 1);
-                        selectedConfig = EffectsLibrary[index];
-                    }
-                    else
-                    {
-                        selectedConfig = EffectsLibrary[Random.Range(0, EffectsLibrary.Count)];
-                    }
-
+                    EffectConfig selectedConfig = GetSelectedConfig();
                     StartCoroutine(SpawnAndDestroyCycle(spawnPos, selectedConfig));
                 }
             }
+        }
+
+        private EffectConfig GetSelectedConfig()
+        {
+            if (UseStaticEffect)
+            {
+                int index = Mathf.Clamp(StaticEffectIndex, 0, EffectsLibrary.Count - 1);
+                return EffectsLibrary[index];
+            }
+            return EffectsLibrary[Random.Range(0, EffectsLibrary.Count)];
         }
 
         private Vector3 GetCorrectedSpawnPosition()
@@ -77,17 +98,14 @@ namespace TaiChi
         {
             _canTrigger = false;
 
-            // 1. Calculate the offset position relative to the base foot midpoint
             Vector3 finalPos = basePosition + config.Offset;
+            Quaternion baseRotation = Quaternion.LookRotation(
+                OrbManagerRef.MainCamera.transform.forward,
+                OrbManagerRef.MainCamera.transform.up
+            );
 
-            // 2. Base rotation logic (proven working)
-            Quaternion baseRotation = Quaternion.LookRotation(OrbManagerRef.MainCamera.transform.forward, OrbManagerRef.MainCamera.transform.up);
-
-            // 3. Spawn and Apply Scale
             GameObject spawnedEffect = Instantiate(config.Prefab, finalPos, baseRotation);
             spawnedEffect.transform.localScale *= config.CustomScale;
-
-            // 4. Your proven 90-degree correction for Landscape/Phone orientation
             spawnedEffect.transform.Rotate(0, 0, 90f);
 
             yield return new WaitForSeconds(EffectDuration);

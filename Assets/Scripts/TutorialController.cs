@@ -200,9 +200,9 @@ namespace TaiChi
 
             InstructionText.text = WrapInSummaryStyle(
                 "TUTORIAL COMPLETE!",
-                "<color=#FFD700><b>CHALLENGE SUCCESSFUL!</b></color>\n\n" +
-                "You accumulated <color=#00FF00><b>5 seconds</b></color> of high accuracy.\n\n" +
-                "You are ready to begin your <color=#FFD700>Tai Chi journey</color>.",
+                "<color=#FFD700><b>GOOD JOB!</b></color>\n\n" +
+                "You maintained <color=#00FF00><b>5 seconds</b></color> of good accuracy.\n\n" +
+                "You are now ready to begin your <color=#FFD700>Tai Chi journey</color>.",
                 ""
             );
         }
@@ -211,12 +211,11 @@ namespace TaiChi
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("<color=#FFD700><size=115%><b>WELCOME TO TAI CHI MASTER</b></size></color>");
-            sb.AppendLine("<size=30%>\n</size>");
-            sb.AppendLine("<size=90%><color=#AAAAAA>MISSION:</color> Master Tai Chi with real-time AR guidance.</size>");
+            sb.AppendLine("<size=90%> Master Tai Chi with real-time AR guidance.</size>");
             sb.AppendLine();
             sb.AppendLine("<color=#FFD700><b>── Features ──</b></color>");
-            sb.AppendLine("<line-height=110%><size=90%><color=#FFD700><b>Full Play:</b></color> Accuracy-based training.");
-            sb.AppendLine("<size=90%><color=#FFD700><b>Cheat Mode:</b></color> Debug & sensor calibration.</size></line-height>");
+            sb.AppendLine("<line-height=110%><size=90%><color=#FFD700><b>Full Play:</b></color> Training sessions with real-time feedback and statistics breakdown for improvement.");
+            sb.AppendLine("<size=90%><color=#FFD700><b>Cheat Mode:</b></color> Adjust threshold to suit student's need and access advanced real-time data.</size></line-height>");
             sb.AppendLine();
             sb.AppendLine("<color=#FFD700><b>── Goal ──</b></color>");
             sb.AppendLine("<size=90%>Hold accuracy above <color=#00FF00><b>60%</b></color> for 5s total.</size>");

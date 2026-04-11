@@ -1213,7 +1213,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -90}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 286, y: -0}
+  m_AnchoredPosition: {x: 286, y: 0}
   m_SizeDelta: {x: 160, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &232278660
@@ -4150,6 +4150,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1142081499}
+  - {fileID: 1199218376}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &992381502
@@ -4208,6 +4209,7 @@ MonoBehaviour:
   StaticEffectIndex: 0
   EffectDuration: 2
   CooldownDuration: 5
+  TriggerThreshold: 10
 --- !u!1 &997695430
 GameObject:
   m_ObjectHideFlags: 0
@@ -5040,52 +5042,63 @@ MonoBehaviour:
     IsCheatModeStep: 0
     IsPracticeIntro: 0
     HideArrow: 1
-  - InstructionText: These Orbs track your body's joints in real-time. As you move,
-      the Orbs will change color according to your synchronization with Shifu. Your
-      goal is to keep them Blue by matching Shifu's posture as closely as possible.
+  - InstructionText: "<size=110%><color=#FFD700><b>BODY TRACKING</b></color>\\n\r\nThese
+      Orbs show your body's joints synchronization in real-time. Match Shifu's posture
+      to keep them <color=#00FFFF><b>BLUE</b></color>. \r\n\r\nIf they turn <color=#FF0000><b>RED</b></color>,
+      adjust your alignment to regain synchronization.</size>"
     HighlightTarget: {fileID: 0}
     ArrowPosition: {x: 0, y: 0, z: 0}
     ArrowRotation: {x: 0, y: 0, z: -90}
     IsCheatModeStep: 0
     IsPracticeIntro: 0
     HideArrow: 1
-  - InstructionText: This is your Overall Score. Watch this to see how well you are
-      performing the Tai Chi move!
+  - InstructionText: '<size=110%><color=#FFD700><b>PERFORMANCE MONITOR</b></color>\n
+
+      This
+      is your <color=#FFD700><b>Overall Score</b></color>. Watch this meter to see
+      how accurately you are flowing through the Tai Chi movements.</size>'
     HighlightTarget: {fileID: 442702123}
     ArrowPosition: {x: 311, y: 549, z: 0}
     ArrowRotation: {x: 0, y: 0, z: 90}
     IsCheatModeStep: 0
     IsPracticeIntro: 0
     HideArrow: 0
-  - InstructionText: Use the Menu Icon to return to the main screen.
+  - InstructionText: '<size=110%><color=#FFD700><b>MENU</b></color>\n
+
+      Use
+      the <color=#FFD700><b>Menu Icon</b></color> to return to the main selection
+      screen at any time.</size>'
     HighlightTarget: {fileID: 1779514764}
     ArrowPosition: {x: 365, y: -687, z: 0}
     ArrowRotation: {x: 0, y: 0, z: -90}
     IsCheatModeStep: 0
     IsPracticeIntro: 0
     HideArrow: 0
-  - InstructionText: 'Tap the Cheat Icon to open the Settings Panel. You can customize
-      two main areas to change how the game feels:  Orb Tolerance: Lower this to
-      make the Orbs stay Green longer. This gives you more "breathing room" before
-      they turn Red.  Effect Sensitivity: Decide how perfect your pose must be to
-      trigger special visual effects.'
+  - InstructionText: "<size=110%><color=#FFD700><b>Cheatmode</b></color><size=5%>\\n</size>\r\nTap
+      the <color=#FFD700><b>Cheat Icon</b></color> to customize your experience:\r\n\u2022
+      <color=#00FF00><b>Orb Threshold:</b></color> Adjust how strictly the Blue color
+      is awarded.\r\n\u2022 <color=#00FF00><b>Effect Threshold:</b></color> Set the
+      score required to trigger visual rewards.</size>"
     HighlightTarget: {fileID: 1775620973}
     ArrowPosition: {x: 246, y: -687, z: 0}
     ArrowRotation: {x: 0, y: 0, z: -90}
     IsCheatModeStep: 1
     IsPracticeIntro: 0
     HideArrow: 0
-  - InstructionText: The Debug Icon toggles the Data Overlay. This panel is designed
-      for advanced users and developers to monitor the live system performance.
+  - InstructionText: '<size=110%><color=#FFD700><b>DEBUG MONITOR</b></color><size=5%>\n</size>
+
+      The
+      <color=#FFD700><b>Debug Icon</b></color> toggles real-time joint data. This
+      is used for technical monitoring of sensor accuracy and system performance.</size>'
     HighlightTarget: {fileID: 353911471}
     ArrowPosition: {x: 126, y: -687, z: 0}
     ArrowRotation: {x: 0, y: 0, z: -90}
     IsCheatModeStep: 1
     IsPracticeIntro: 0
     HideArrow: 0
-  - InstructionText: <color=#FFD700><size=120%>READY TO START?</size></color>\n\nMatch
-      the master's pose now. The tutorial will automatically finish once you hit
-      60% Accuracy.
+  - InstructionText: <color=#FFD700><size=120%><b>READY TO START?</b></size></color>\n\nMatch
+      the Shifu's pose now. The tutorial will automatically finish once you hit <color=#00FF00>60%
+      Accuracy</color>.
     HighlightTarget: {fileID: 0}
     ArrowPosition: {x: 0, y: -1000, z: 0}
     ArrowRotation: {x: 0, y: 0, z: -90}
@@ -5111,12 +5124,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1199218374}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -24.99898, y: 0, z: 95.51672}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -24.85426, y: 0, z: 101.72037}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 992381501}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1207960276
 GameObject:
@@ -9170,7 +9183,6 @@ SceneRoots:
   - {fileID: 1064799461}
   - {fileID: 1446475462}
   - {fileID: 992381501}
-  - {fileID: 1199218376}
   - {fileID: 2027984867}
   - {fileID: 1267016267}
   - {fileID: 1405981864}
